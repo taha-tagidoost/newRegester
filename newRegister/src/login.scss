@@ -1,0 +1,261 @@
+@font-face {
+  font-family: "yekanbkh";
+  src: url(../public/fonts/YekanBakhFaNum/TTF/YekanBakhFaNum-Regular.ttf);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  direction: rtl;
+  font-family: "yekanbkh";
+}
+
+.loginContainer {
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .login {
+    padding: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    max-width: 500px;
+    width: 100%;
+    margin: auto;
+    gap: 3em;
+
+    &.active {
+      display: flex;
+    }
+
+    .topSide {
+      display: flex;
+      align-items: flex-end; // was `end`
+      justify-content: center;
+      gap: 1em;
+
+      > a {
+        width: 15rem;
+
+        > img {
+          width: 100%;
+        }
+      }
+
+      .description {
+        width: fit-content;
+
+        > p {
+          font-weight: bold;
+          color: #2589ca;
+          font-size: 28px;
+        }
+      }
+    }
+
+    .witchOne {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      width: 100%;
+
+      button {
+        border: none;
+        background: none;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        width: 13rem; // removed duplicate width:50%
+
+        &.active {
+          border-bottom: 2.5px solid #2589ca;
+          border-radius: 0.6em;
+          padding-block: 1rem;
+        }
+      }
+    }
+
+    #firstLogPage,
+    #secondLogPage {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 2rem;
+
+      .inputContainer {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 2rem;
+
+        input {
+          width: 100%;
+          padding-block: 0.6rem;
+          padding-inline: 1rem;
+          border-radius: 0.88rem;
+          border: 2px solid #42a2e1;
+          box-shadow: 0 0 12px -3px #42a2e1;
+          outline: none;
+        }
+
+        .backInputforSearch {
+          width: 100%;
+          padding-block: 0.6rem;
+          padding-inline: 1rem;
+          border-radius: 0.88rem;
+          border: 2px solid #42a2e1;
+          box-shadow: 0 0 12px -3px #42a2e1;
+          outline: none;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          input {
+            all: unset;
+            width: 90%;
+            background: #fff;
+            outline: none;
+          }
+
+          .eyeContainer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; // was `end`
+
+            #showPassword {
+              cursor: pointer;
+            }
+            #hidePassword {
+              display: none;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+
+    .submitCountainer {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 2rem;
+
+      button {
+        background-color: #2086c8;
+        width: 100%;
+        border-radius: 0.8rem;
+        padding-block: 0.8rem;
+        color: #fff;
+        border: none;
+      }
+
+      > p {
+        font-weight: bold;
+
+        > a {
+          text-decoration: none;
+        }
+      }
+    }
+
+    .topSideAfter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      /* gap: 2rem; */
+      width: 100%;
+      .rightSideLogo {
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        gap: 1rem;
+        > a {
+          width: 6rem;
+          > img {
+            width: 100%;
+          }
+        }
+        .description {
+          width: 16rem;
+          > p {
+            color: #2086c8;
+            font-weight: 900;
+            font-size: 1.1rem;
+          }
+        }
+      }
+      > i {
+        color: #2086c8;
+        font-size: 1.7rem;
+      }
+    }
+
+    .txtItemContainer {
+      display: grid;
+      align-items: center;
+      justify-content: center;
+      grid-template-columns: 307px 1fr;
+      gap: 1rem;
+      .item:nth-child(1) {
+        font-weight: 900;
+        font-size: 1.5rem;
+      }
+      .item:nth-child(2) {
+        grid-column: 1 / 2;
+      }
+      .item:nth-child(3) {
+        grid-row: 2 / 2;
+        grid-column: 2 / 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        color: 1e4AE9;
+      }
+    }
+
+    .inputsContainer {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      direction: ltr;
+      > input {
+        width: 2.7rem;
+        border-radius: 0.5rem;
+        outline: none;
+        height: 2.7rem;
+        border: none;
+        border: 1px solid #42a2e1;
+        text-align: center;
+        font-size: 2rem;
+      }
+    }
+    .resendContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1em;
+      .resendTxt:nth-child(1) {
+      }
+      .resendTxt:nth-child(2) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: bold;
+      }
+    }
+  }
+}
