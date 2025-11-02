@@ -80,35 +80,36 @@ function getOrCreateErrorP(inputEl) {
     const wrapper = inputEl.closest(".backInputforSearch");
     anchor = wrapper || inputEl;
   }
-  let p = anchor.nextElementSibling;
+  let p = anchor?.nextElementSibling;
   if (!p || !p.classList || !p.classList.contains("field-error")) {
     p = document.createElement("p");
     p.className = "field-error";
     p.setAttribute("role", "alert");
     p.setAttribute("aria-live", "polite");
-    anchor.insertAdjacentElement("afterend", p);
+    anchor?.insertAdjacentElement("afterend", p);
   }
   return p;
 }
-function showError(inputEl, msg) {
+function showFieldError(inputEl, msg) {
   const p = getOrCreateErrorP(inputEl);
   p.textContent = msg || "";
-  inputEl.classList.add("invalid");
-  inputEl.setAttribute("aria-invalid", "true");
-  const wrapper = inputEl.closest(".backInputforSearch");
+  inputEl?.classList.add("invalid");
+  inputEl?.setAttribute("aria-invalid", "true");
+  const wrapper = inputEl?.closest?.(".backInputforSearch");
   if (wrapper) wrapper.classList.add("invalid");
 }
-function clearError(inputEl) {
+function clearFieldError(inputEl) {
   const p = getOrCreateErrorP(inputEl);
   p.textContent = "";
-  inputEl.classList.remove("invalid");
-  inputEl.removeAttribute("aria-invalid");
-  const wrapper = inputEl.closest(".backInputforSearch");
+  inputEl?.classList.remove("invalid");
+  inputEl?.removeAttribute("aria-invalid");
+  const wrapper = inputEl?.closest?.(".backInputforSearch");
   if (wrapper) wrapper.classList.remove("invalid");
 }
 
-/* ====== تایمرهای OTP چندسکشنه ====== */
+/* ====== مدیریت OTP چندسکشن + تفکیک جریان ====== */
 const otpIntervals = new Map(); // key: sectionId → intervalId
+let otpFlow = null;             // "login" | "forgot" | null
 
 function stopOtpTimer(sectionId) {
   const id = otpIntervals.get(sectionId);
@@ -159,19 +160,24 @@ function wireOtpResend(sectionId) {
   resendBtn.dataset.wired = "1";
   resendBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    // TODO: اینجا API ارسال مجدد
+    // TODO: API ارسال مجدد
     startOtpTimer(sectionId, 120);
     $(`#${sectionId} .inputsContainer input`)?.focus();
   });
 }
 
-/* ====== وایرینگ OTP برای هر سکشن به‌صورت عمومی ====== */
+/* ====== اعتبارسنجی تستی OTP (جایگزین با API واقعی) ====== */
+function verifyOtpMock(code) {
+  // فعلاً هر کد ۵ رقمی رو معتبر می‌گیره
+  return Promise.resolve(/^\d{5}$/.test(code));
+}
+
+/* ====== وایرینگ OTP عمومی برای هر سکشن ====== */
 function wireOtpForSection(sectionId, { onComplete, verifyFn } = {}) {
   const container = $(`#${sectionId} .inputsContainer`);
   if (!container) return;
 
   if (container.dataset.wired === "1") {
-    // فقط تایمر و دکمه ارسال‌مجدد را فعال/ریست کن
     startOtpTimer(sectionId, 120);
     wireOtpResend(sectionId);
     return;
@@ -191,20 +197,17 @@ function wireOtpForSection(sectionId, { onComplete, verifyFn } = {}) {
 
     inp.addEventListener("input", async () => {
       inp.value = inp.value.replace(/\D/g, "").slice(0, 1);
-      // حرکت به بعدی
       if (inp.value && idx < K - 1) {
         inputs[idx + 1].focus();
         inputs[idx + 1].select();
       }
-      // اگر همه پر شد
       const code = inputs.map((i) => i.value).join("");
       if (code.length === K && /^[0-9]{5}$/.test(code)) {
         try {
-          const ok = verifyFn ? await verifyFn(code) : true; // پیش‌فرض: موفق
+          const ok = verifyFn ? await verifyFn(code) : true;
           if (ok) {
             typeof onComplete === "function" && onComplete(code);
           } else {
-            // خطای سرور/کد اشتباه: فقط پاک و تمرکز روی اولی
             inputs.forEach((i) => (i.value = ""));
             inputs[0].focus();
             alert("کد وارد شده صحیح نیست.");
@@ -232,7 +235,6 @@ function wireOtpForSection(sectionId, { onComplete, verifyFn } = {}) {
     const digits = t.slice(0, K).split("");
     inputs.forEach((inp, i) => (inp.value = digits[i] || ""));
     (inputs[Math.min(digits.length, K - 1)] || inputs[0]).focus();
-    // اگر با پیست کامل شد
     const code = inputs.map((i) => i.value).join("");
     if (code.length === K && /^[0-9]{5}$/.test(code)) {
       (verifyFn ? verifyFn(code) : Promise.resolve(true)).then((ok) => {
@@ -241,7 +243,6 @@ function wireOtpForSection(sectionId, { onComplete, verifyFn } = {}) {
     }
   });
 
-  // تایمر و ارسال مجدد
   startOtpTimer(sectionId, 120);
   wireOtpResend(sectionId);
 }
@@ -297,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // دریافت کد از firstLogPage → newPassword
+  // دریافت کد از firstLogPage (ورود با کد یکبارمصرف) → فقط OTP و تمام
   const getCodeBtn = $("#getCodeBtn");
   if (getCodeBtn) {
     getCodeBtn.addEventListener("click", (e) => {
@@ -307,32 +308,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const val = sanitizeToDigits(mobileInput.value);
       const { valid, msg } = validateIranMobile(val);
       if (!valid) {
-        showError(mobileInput, msg);
+        showFieldError(mobileInput, msg);
         mobileInput.focus();
         return;
       }
-      clearError(mobileInput);
+      clearFieldError(mobileInput);
+
+      // جریان ورود
+      otpFlow = "login";
 
       showSectionBySectionId("newPassword", () => {
-        // نمایش شماره در متن
         const phoneTxt = $("#newPassword .txtItemContainer .item:nth-child(2)");
         phoneTxt && (phoneTxt.textContent = `کد ارسال شده به ${val} را وارد کنید.`);
 
-        // وایرینگ OTP برای newPassword
         wireOtpForSection("newPassword", {
-          verifyFn: verifyOtpMock, // تستی: همه کدها را صحیح فرض می‌کند
+          verifyFn: verifyOtpMock,
           onComplete: () => {
-            // موفق: برو به enterNewPassword
-            showSectionBySectionId("enterNewPassword", () => {
-              // اگر لازم داری اینجا ورودی‌های مرحله بعد رو هم وایر کنی، انجام بده
-              wireOtpForSection("enterNewPassword", {
-                verifyFn: verifyOtpMock,
-                onComplete: () => {
-                  // اینجا می‌تونی بری به فرم تعیین رمز جدید واقعی یا داشبورد
-                  console.log("✅ OTP مرحله دوم هم صحیح بود.");
-                },
-              });
-            });
+            // ✅ در جریان ورود به فرم تعیین رمز نمی‌رویم
+            console.log("✅ OTP ورود تایید شد (login flow)");
+            // اینجا می‌تونی ری‌دایرکت به داشبورد/ورود قطعی کنی
+            // window.location.href = "/dashboard";
           },
         });
       });
@@ -348,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // آیکن فلش برگشت (هر سکشن after) → بازگشت به secondLogPage
+  // آیکن فلش برگشت → بازگشت به secondLogPage
   document.addEventListener("click", (e) => {
     if (e.target.closest(".fa-angle-left")) {
       showSectionByInnerId("secondLogPage", () => {
@@ -356,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stopOtpTimer("enterNewPassword");
         const sec = getSectionByInnerId("secondLogPage");
         setActiveTabInSection(sec, "secondLogPage");
+        otpFlow = null;
       });
     }
   });
@@ -363,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // چشم رمز
   wirePasswordEye();
 
-  // دکمه فراموشی: متن
+  // دکمه فراموشی: تغییر متن
   const forgetSubmit = $("#forgetPassword .submitCountainer button");
   if (forgetSubmit && forgetSubmit.textContent.trim() === "ورود") {
     forgetSubmit.textContent = "دریافت کد";
@@ -377,7 +373,7 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
     let val = sanitizeToDigits(e.target.value).slice(0, 11);
     e.target.value = val;
     const check = validateIranMobile(val);
-    if (check.valid || val.length === 0) clearError(input);
+    if (check.valid || val.length === 0) clearFieldError(input);
   });
   input.addEventListener("paste", (e) => {
     e.preventDefault();
@@ -392,8 +388,8 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
   input.addEventListener("blur", (e) => {
     const val = sanitizeToDigits(e.target.value);
     const { valid, msg } = validateIranMobile(val);
-    if (!valid && val.length > 0) showError(input, msg);
-    else clearError(input);
+    if (!valid && val.length > 0) showFieldError(input, msg);
+    else clearFieldError(input);
   });
 });
 
@@ -412,20 +408,20 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
 
   userInput.addEventListener("blur", () => {
     const val = (userInput.value || "").trim();
-    if (!val) showError(userInput, MSG_USERNAME_EMPTY);
-    else if (!isValidUsername(val) && !validateIranMobile(val).valid) showError(userInput, MSG_USERNAME_INVALID);
-    else clearError(userInput);
+    if (!val) showFieldError(userInput, MSG_USERNAME_EMPTY);
+    else if (!isValidUsername(val) && !validateIranMobile(val).valid) showFieldError(userInput, MSG_USERNAME_INVALID);
+    else clearFieldError(userInput);
   });
 
   passInput.addEventListener("blur", () => {
     const val = (passInput.value || "").trim();
-    if (!val) showError(passInput, MSG_PASSWORD_EMPTY);
-    else if (val.length < 6) showError(passInput, MSG_PASSWORD_SHORT);
-    else clearError(passInput);
+    if (!val) showFieldError(passInput, MSG_PASSWORD_EMPTY);
+    else if (val.length < 6) showFieldError(passInput, MSG_PASSWORD_SHORT);
+    else clearFieldError(passInput);
   });
 
-  userInput.addEventListener("input", () => clearError(userInput));
-  passInput.addEventListener("input", () => clearError(passInput));
+  userInput.addEventListener("input", () => clearFieldError(userInput));
+  passInput.addEventListener("input", () => clearFieldError(passInput));
 
   loginBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -433,13 +429,13 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
     const uVal = (userInput.value || "").trim();
     const pVal = (passInput.value || "").trim();
 
-    if (!uVal) { showError(userInput, MSG_USERNAME_EMPTY); userInput.focus(); hasError = true; }
-    else if (!isValidUsername(uVal) && !validateIranMobile(uVal).valid) { showError(userInput, MSG_USERNAME_INVALID); userInput.focus(); hasError = true; }
-    else clearError(userInput);
+    if (!uVal) { showFieldError(userInput, MSG_USERNAME_EMPTY); userInput.focus(); hasError = true; }
+    else if (!isValidUsername(uVal) && !validateIranMobile(uVal).valid) { showFieldError(userInput, MSG_USERNAME_INVALID); userInput.focus(); hasError = true; }
+    else clearFieldError(userInput);
 
-    if (!pVal) { showError(passInput, MSG_PASSWORD_EMPTY); if (!hasError) passInput.focus(); hasError = true; }
-    else if (pVal.length < 6) { showError(passInput, MSG_PASSWORD_SHORT); if (!hasError) passInput.focus(); hasError = true; }
-    else clearError(passInput);
+    if (!pVal) { showFieldError(passInput, MSG_PASSWORD_EMPTY); if (!hasError) passInput.focus(); hasError = true; }
+    else if (pVal.length < 6) { showFieldError(passInput, MSG_PASSWORD_SHORT); if (!hasError) passInput.focus(); hasError = true; }
+    else clearFieldError(passInput);
 
     if (!hasError) {
       console.log("🔐 ورود معتبر:", uVal);
@@ -450,7 +446,6 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
 
 /* ====== ویرایش شماره در صفحات OTP: برگشت به firstLogPage ====== */
 document.addEventListener("click", (e) => {
-  // هم در newPassword و هم enterNewPassword
   const editItem =
     e.target.closest("#newPassword .txtItemContainer .item, #enterNewPassword .txtItemContainer .item");
   if (!editItem) return;
@@ -473,14 +468,15 @@ document.addEventListener("click", (e) => {
     const phoneInput = document.querySelector("#firstLogPage .onlyNum");
     if (phoneInput) {
       phoneInput.value = sanitizeToDigits(phoneInput.value).slice(0, 11);
-      clearError(phoneInput);
+      clearFieldError(phoneInput);
       phoneInput.focus();
       phoneInput.select?.();
     }
+    otpFlow = null;
   });
 });
 
-/* ====== فراموشی رمز: از forgetPassword → newPassword با OTP ====== */
+/* ====== فراموشی رمز: از forgetPassword → newPassword (OTP) → enterNewPassword (فرم رمز) ====== */
 const forgetSubmitBtn = $("#forgetPassword .submitCountainer button");
 if (forgetSubmitBtn) {
   forgetSubmitBtn.addEventListener("click", (e) => {
@@ -494,14 +490,17 @@ if (forgetSubmitBtn) {
     const { valid, msg } = validateIranMobile(val);
 
     if (!valid) {
-      showError(mobileInput, msg || "لطفاً شماره موبایل را وارد کنید.");
+      showFieldError(mobileInput, msg || "لطفاً شماره موبایل را وارد کنید.");
       mobileInput.focus();
       return;
     }
 
-    clearError(mobileInput);
+    clearFieldError(mobileInput);
 
-    // رفتن به صفحه OTP اول
+    // جریان فراموشی
+    otpFlow = "forgot";
+
+    // رفتن به صفحه OTP
     showSectionBySectionId("newPassword", () => {
       const phoneTxt = $("#newPassword .txtItemContainer .item:nth-child(2)");
       phoneTxt && (phoneTxt.textContent = `کد ارسال شده به ${val} را وارد کنید.`);
@@ -509,14 +508,12 @@ if (forgetSubmitBtn) {
       wireOtpForSection("newPassword", {
         verifyFn: verifyOtpMock,
         onComplete: () => {
-          showSectionBySectionId("enterNewPassword", () => {
-            wireOtpForSection("enterNewPassword", {
-              verifyFn: verifyOtpMock,
-              onComplete: () => {
-                console.log("✅ OTP مرحله دوم هم درست بود.");
-              },
+          // ✅ فقط در حالت forgot برو به فرم رمز جدید
+          if (otpFlow === "forgot") {
+            showSectionBySectionId("enterNewPassword", () => {
+              console.log("➡️ انتقال به فرم تعیین رمز جدید");
             });
-          });
+          }
         },
       });
     });
@@ -526,19 +523,7 @@ if (forgetSubmitBtn) {
   });
 }
 
-/* ====== اعتبارسنجی تستی OTP (جایگزین با API واقعی) ====== */
-function verifyOtpMock(code) {
-  // الان هر کدی 5 رقمی باشه «معتبر» حساب می‌شه
-  return Promise.resolve(/^\d{5}$/.test(code));
-}
-
-
-
-
-
-
-
-/* ====== بررسی رمز جدید و تکرار آن ====== */
+/* ====== بررسی رمز جدید و تکرار آن در enterNewPassword ====== */
 (function () {
   const section = document.querySelector("#enterNewPassword");
   if (!section) return;
@@ -548,43 +533,38 @@ function verifyOtpMock(code) {
   const submitBtn = section.querySelector("#confirmNewPassBtn");
   const errorField = section.querySelector(".field-error");
 
-  if (!pass1 || !pass2 || !submitBtn) return;
+  if (!pass1 || !pass2 || !submitBtn || !errorField) return;
 
-  function showError(msg) {
-    errorField.textContent = msg;
-    errorField.style.color = "#e53935";
-  }
-  function clearError() {
-    errorField.textContent = "";
-  }
+  const showErr = (msg) => { errorField.textContent = msg; errorField.style.color = "#e53935"; };
+  const clearErr = () => { errorField.textContent = ""; };
 
   submitBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    const val1 = pass1.value.trim();
-    const val2 = pass2.value.trim();
+
+    const val1 = (pass1.value || "").trim();
+    const val2 = (pass2.value || "").trim();
 
     if (!val1 || !val2) {
-      showError("لطفاً هر دو فیلد را پر کنید.");
+      showErr("لطفاً هر دو فیلد را پر کنید.");
       return;
     }
-
     if (val1.length < 6) {
-      showError("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+      showErr("رمز عبور باید حداقل ۶ کاراکتر باشد.");
       return;
     }
-
     if (val1 !== val2) {
-      showError("رمزها با هم مطابقت ندارند.");
+      showErr("رمزها با هم مطابقت ندارند.");
       return;
     }
 
-    clearError();
+    clearErr();
     console.log("✅ رمز جدید ثبت شد:", val1);
     alert("رمز جدید با موفقیت ذخیره شد ✅");
 
-    // بعد از موفقیت می‌تونی به صفحه ورود برگردی:
+    // مثلا بعد از موفقیت:
     // showSectionBySectionId("secondLogPage");
+    otpFlow = null;
   });
 
-  [pass1, pass2].forEach((inp) => inp.addEventListener("input", clearError));
+  [pass1, pass2].forEach((inp) => inp.addEventListener("input", clearErr));
 })();
