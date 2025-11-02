@@ -1,8 +1,8 @@
 /* ====== تنظیمات عمومی ====== */
-const TRANSITION_MS = 300; // باید با transition در SCSS هماهنگ باشد (.28s≈300ms)
+const TRANSITION_MS = 300;
 
 /* ====== ابزارک‌های سریع ====== */
-const $ = (sel, root = document) => root.querySelector(sel);
+const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function getVisibleSection() {
@@ -13,7 +13,7 @@ function getSectionByInnerId(innerId) {
   return inner ? inner.closest("section.login") : null;
 }
 function getSectionBySectionId(sectionId) {
-  return document.getElementById(sectionId);
+  return document.querySelector(`#${CSS.escape(sectionId)}`);
 }
 
 /* ====== ناوبری بین سکشن‌ها ====== */
@@ -26,17 +26,13 @@ function fadeToSection(targetSection, cb) {
   }
   if (current) current.classList.remove("is-visible");
   targetSection.classList.add("is-visible");
-  window.setTimeout(() => {
-    if (typeof cb === "function") cb();
-  }, TRANSITION_MS);
+  setTimeout(() => typeof cb === "function" && cb(), TRANSITION_MS);
 }
 function showSectionByInnerId(innerId, cb) {
-  const sec = getSectionByInnerId(innerId);
-  fadeToSection(sec, cb);
+  fadeToSection(getSectionByInnerId(innerId), cb);
 }
 function showSectionBySectionId(sectionId, cb) {
-  const sec = getSectionBySectionId(sectionId);
-  fadeToSection(sec, cb);
+  fadeToSection(getSectionBySectionId(sectionId), cb);
 }
 function setActiveTabInSection(section, targetInnerId, clickedBtn = null) {
   if (!section) return;
@@ -47,11 +43,10 @@ function setActiveTabInSection(section, targetInnerId, clickedBtn = null) {
   });
   if (clickedBtn) {
     const curSec = clickedBtn.closest("section.login");
-    if (curSec) {
-      $$('.witchOne button[data-group="register"]', curSec).forEach((b) => {
-        b.classList.toggle("active", b === clickedBtn);
-      });
-    }
+    curSec &&
+      $$('.witchOne button[data-group="register"]', curSec).forEach((b) =>
+        b.classList.toggle("active", b === clickedBtn)
+      );
   }
 }
 
@@ -74,22 +69,17 @@ function validateIranMobile(val) {
 }
 const isValidUsername = (v) => /^[A-Za-z0-9._-]{3,32}$/.test((v || "").trim());
 
-/* ====== سیستم واحد مدیریت خطا (برای همهٔ فیلدها، حتی پسورد) ====== */
+/* ====== سیستم واحد مدیریت خطا ====== */
 function getOrCreateErrorP(inputEl) {
   let anchor;
-
-  // برای پسورد: پیام را بعد از .backInputforSearch بگذار
   if (inputEl && inputEl.id === "inputPassword") {
     const wrapper = inputEl.closest(".backInputforSearch");
     if (wrapper) anchor = wrapper;
   }
-
-  // برای بقیه فیلدها یا اگر wrapper نبود
   if (!anchor) {
     const wrapper = inputEl.closest(".backInputforSearch");
     anchor = wrapper || inputEl;
   }
-
   let p = anchor.nextElementSibling;
   if (!p || !p.classList || !p.classList.contains("field-error")) {
     p = document.createElement("p");
@@ -100,32 +90,96 @@ function getOrCreateErrorP(inputEl) {
   }
   return p;
 }
-
 function showError(inputEl, msg) {
   const p = getOrCreateErrorP(inputEl);
   p.textContent = msg || "";
   inputEl.classList.add("invalid");
-
-  // اگر داخل backInputforSearch بود، روی wrapper هم invalid بده
+  inputEl.setAttribute("aria-invalid", "true");
   const wrapper = inputEl.closest(".backInputforSearch");
   if (wrapper) wrapper.classList.add("invalid");
 }
-
 function clearError(inputEl) {
   const p = getOrCreateErrorP(inputEl);
   p.textContent = "";
   inputEl.classList.remove("invalid");
-
+  inputEl.removeAttribute("aria-invalid");
   const wrapper = inputEl.closest(".backInputforSearch");
   if (wrapper) wrapper.classList.remove("invalid");
 }
 
-/* ====== ورود OTP ====== */
-function wireOtpInputs() {
-  const container = $("#thirdLogPage .inputsContainer");
+/* ====== تایمرهای OTP چندسکشنه ====== */
+const otpIntervals = new Map(); // key: sectionId → intervalId
+
+function stopOtpTimer(sectionId) {
+  const id = otpIntervals.get(sectionId);
+  if (id) {
+    clearInterval(id);
+    otpIntervals.delete(sectionId);
+  }
+}
+function resetOtpUI(sectionId) {
+  $$( `#${sectionId} .inputsContainer input` ).forEach((i) => (i.value = ""));
+  const timerEl   = $(`#${sectionId} .resendContainer .otpTimer`);
+  const expiredEl = $(`#${sectionId} .resendContainer .OTPEXpired`);
+  if (timerEl) { timerEl.style.display = "block"; timerEl.textContent = "2:00"; }
+  if (expiredEl) expiredEl.style.display = "none";
+}
+function startOtpTimer(sectionId, durationSec = 120) {
+  const timerEl   = $(`#${sectionId} .resendContainer .otpTimer`);
+  const expiredEl = $(`#${sectionId} .resendContainer .OTPEXpired`);
+  if (!timerEl || !expiredEl) return;
+
+  stopOtpTimer(sectionId);
+  resetOtpUI(sectionId);
+
+  let total = durationSec;
+  const render = () => {
+    const m = Math.floor(total / 60).toString();
+    const s = (total % 60).toString().padStart(2, "0");
+    timerEl.textContent = `${m}:${s}`;
+  };
+  render();
+
+  const intId = setInterval(() => {
+    total--;
+    if (total <= 0) {
+      stopOtpTimer(sectionId);
+      timerEl.style.display = "none";
+      expiredEl.style.display = "flex";
+      return;
+    }
+    render();
+  }, 1000);
+
+  otpIntervals.set(sectionId, intId);
+}
+function wireOtpResend(sectionId) {
+  const resendBtn = $(`#${sectionId} .OTPEXpired .resendTxt:nth-child(2)`);
+  if (!resendBtn || resendBtn.dataset.wired === "1") return;
+  resendBtn.dataset.wired = "1";
+  resendBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    // TODO: اینجا API ارسال مجدد
+    startOtpTimer(sectionId, 120);
+    $(`#${sectionId} .inputsContainer input`)?.focus();
+  });
+}
+
+/* ====== وایرینگ OTP برای هر سکشن به‌صورت عمومی ====== */
+function wireOtpForSection(sectionId, { onComplete, verifyFn } = {}) {
+  const container = $(`#${sectionId} .inputsContainer`);
   if (!container) return;
+
+  if (container.dataset.wired === "1") {
+    // فقط تایمر و دکمه ارسال‌مجدد را فعال/ریست کن
+    startOtpTimer(sectionId, 120);
+    wireOtpResend(sectionId);
+    return;
+  }
+  container.dataset.wired = "1";
+
   const inputs = $$('input[type="text"]', container);
-  if (!inputs.length) return;
+  const K = inputs.length || 5;
 
   inputs.forEach((inp, idx) => {
     inp.setAttribute("inputmode", "numeric");
@@ -135,11 +189,29 @@ function wireOtpInputs() {
       if (e.data && !/^\d$/.test(e.data)) e.preventDefault();
     });
 
-    inp.addEventListener("input", () => {
+    inp.addEventListener("input", async () => {
       inp.value = inp.value.replace(/\D/g, "").slice(0, 1);
-      if (inp.value && idx < inputs.length - 1) {
+      // حرکت به بعدی
+      if (inp.value && idx < K - 1) {
         inputs[idx + 1].focus();
         inputs[idx + 1].select();
+      }
+      // اگر همه پر شد
+      const code = inputs.map((i) => i.value).join("");
+      if (code.length === K && /^[0-9]{5}$/.test(code)) {
+        try {
+          const ok = verifyFn ? await verifyFn(code) : true; // پیش‌فرض: موفق
+          if (ok) {
+            typeof onComplete === "function" && onComplete(code);
+          } else {
+            // خطای سرور/کد اشتباه: فقط پاک و تمرکز روی اولی
+            inputs.forEach((i) => (i.value = ""));
+            inputs[0].focus();
+            alert("کد وارد شده صحیح نیست.");
+          }
+        } catch {
+          alert("خطا در بررسی کد. دوباره تلاش کنید.");
+        }
       }
     });
 
@@ -148,9 +220,8 @@ function wireOtpInputs() {
         inputs[idx - 1].focus();
         inputs[idx - 1].value = "";
       }
-      if (e.key === "ArrowLeft" && idx > 0) inputs[idx - 1].focus();
-      if (e.key === "ArrowRight" && idx < inputs.length - 1)
-        inputs[idx + 1].focus();
+      if (e.key === "ArrowLeft"  && idx > 0)      inputs[idx - 1].focus();
+      if (e.key === "ArrowRight" && idx < K - 1)   inputs[idx + 1].focus();
     });
   });
 
@@ -158,17 +229,28 @@ function wireOtpInputs() {
     const t = (e.clipboardData || window.clipboardData).getData("text") || "";
     if (!/^\d+$/.test(t)) return;
     e.preventDefault();
-    const digits = t.slice(0, inputs.length).split("");
+    const digits = t.slice(0, K).split("");
     inputs.forEach((inp, i) => (inp.value = digits[i] || ""));
-    (inputs[Math.min(digits.length, inputs.length - 1)] || inputs[0]).focus();
+    (inputs[Math.min(digits.length, K - 1)] || inputs[0]).focus();
+    // اگر با پیست کامل شد
+    const code = inputs.map((i) => i.value).join("");
+    if (code.length === K && /^[0-9]{5}$/.test(code)) {
+      (verifyFn ? verifyFn(code) : Promise.resolve(true)).then((ok) => {
+        if (ok) typeof onComplete === "function" && onComplete(code);
+      });
+    }
   });
+
+  // تایمر و ارسال مجدد
+  startOtpTimer(sectionId, 120);
+  wireOtpResend(sectionId);
 }
 
 /* ====== نمایش/پنهان‌کردن رمز ====== */
 function wirePasswordEye() {
-  const pwd = $("#inputPassword");
-  const show = $("#showPassword");
-  const hide = $("#hidePassword");
+  const pwd  = $("#inputPassword");
+  const show = $("#hidePassword"); // چشم باز: نمایش
+  const hide = $("#showPassword"); // چشم خط‌خورده: پنهان
   if (!pwd || !show || !hide) return;
 
   const set = (on) => {
@@ -181,25 +263,25 @@ function wirePasswordEye() {
   hide.addEventListener("click", () => set(false));
 }
 
-/* ====== تغییر سکشن ====== */
+/* ====== تغییر سکشن فراموشی ====== */
 function showForgetPassword() {
   showSectionBySectionId("forgetPassword", () => {
+    stopOtpTimer("newPassword");
+    stopOtpTimer("enterNewPassword");
     const phone = $("#forgetPassword .inputContainer input");
-    if (phone) phone.focus();
+    phone?.focus();
   });
 }
 
 /* ====== رفتار عمومی ====== */
 document.addEventListener("DOMContentLoaded", () => {
-  // فقط firstLogPage نمایش داده شود
+  // شروع: فقط firstLogPage
   $$(".loginContainer .login").forEach((s) => s.classList.remove("is-visible"));
   const firstSec = getSectionByInnerId("firstLogPage");
-  if (firstSec) {
-    firstSec.classList.add("is-visible");
-    setActiveTabInSection(firstSec, "firstLogPage");
-  }
+  firstSec?.classList.add("is-visible");
+  firstSec && setActiveTabInSection(firstSec, "firstLogPage");
 
-  // تب‌سوئیچ
+  // تب‌سوئیچ first/second
   document.addEventListener("click", (e) => {
     const btn = e.target.closest('button[data-group="register"][data-target]');
     if (!btn) return;
@@ -208,12 +290,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setActiveTabInSection(btn.closest("section.login"), targetInnerId, btn);
     showSectionByInnerId(targetInnerId, () => {
+      stopOtpTimer("newPassword");
+      stopOtpTimer("enterNewPassword");
       const destSec = getSectionByInnerId(targetInnerId);
       setActiveTabInSection(destSec, targetInnerId);
     });
   });
 
-  // دریافت کد OTP (firstLogPage)
+  // دریافت کد از firstLogPage → newPassword
   const getCodeBtn = $("#getCodeBtn");
   if (getCodeBtn) {
     getCodeBtn.addEventListener("click", (e) => {
@@ -228,15 +312,34 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       clearError(mobileInput);
-      showSectionBySectionId("thirdLogPage", () => {
-        wireOtpInputs();
-        const firstOtp = $("#thirdLogPage .inputsContainer input");
-        if (firstOtp) firstOtp.focus();
+
+      showSectionBySectionId("newPassword", () => {
+        // نمایش شماره در متن
+        const phoneTxt = $("#newPassword .txtItemContainer .item:nth-child(2)");
+        phoneTxt && (phoneTxt.textContent = `کد ارسال شده به ${val} را وارد کنید.`);
+
+        // وایرینگ OTP برای newPassword
+        wireOtpForSection("newPassword", {
+          verifyFn: verifyOtpMock, // تستی: همه کدها را صحیح فرض می‌کند
+          onComplete: () => {
+            // موفق: برو به enterNewPassword
+            showSectionBySectionId("enterNewPassword", () => {
+              // اگر لازم داری اینجا ورودی‌های مرحله بعد رو هم وایر کنی، انجام بده
+              wireOtpForSection("enterNewPassword", {
+                verifyFn: verifyOtpMock,
+                onComplete: () => {
+                  // اینجا می‌تونی بری به فرم تعیین رمز جدید واقعی یا داشبورد
+                  console.log("✅ OTP مرحله دوم هم صحیح بود.");
+                },
+              });
+            });
+          },
+        });
       });
     });
   }
 
-  // فراموشی رمز عبور
+  // فراموشی رمز از تب دوم → forgetPassword
   const forgot = $(".forgetLink[data-action='forgot']");
   if (forgot) {
     forgot.addEventListener("click", (e) => {
@@ -245,10 +348,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // بازگشت با فلش (در صفحات after)
+  // آیکن فلش برگشت (هر سکشن after) → بازگشت به secondLogPage
   document.addEventListener("click", (e) => {
     if (e.target.closest(".fa-angle-left")) {
       showSectionByInnerId("secondLogPage", () => {
+        stopOtpTimer("newPassword");
+        stopOtpTimer("enterNewPassword");
         const sec = getSectionByInnerId("secondLogPage");
         setActiveTabInSection(sec, "secondLogPage");
       });
@@ -258,15 +363,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // چشم رمز
   wirePasswordEye();
 
-  // تغییر متن دکمه فراموشی رمز در صورت نیاز
+  // دکمه فراموشی: متن
   const forgetSubmit = $("#forgetPassword .submitCountainer button");
   if (forgetSubmit && forgetSubmit.textContent.trim() === "ورود") {
     forgetSubmit.textContent = "دریافت کد";
   }
 });
 
-/* ====== فیلدهای onlyNum: فقط عدد، پاک‌سازی و ولیدیشن بلادرنگ ====== */
+/* ====== فیلدهای onlyNum ====== */
 document.querySelectorAll(".onlyNum").forEach((input) => {
+  input.setAttribute("inputmode", "numeric");
   input.addEventListener("input", (e) => {
     let val = sanitizeToDigits(e.target.value).slice(0, 11);
     e.target.value = val;
@@ -275,9 +381,10 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
   });
   input.addEventListener("paste", (e) => {
     e.preventDefault();
-    let txt = (e.clipboardData || window.clipboardData).getData("text") || "";
-    txt = sanitizeToDigits(txt).slice(0, 11);
-    document.execCommand("insertText", false, txt);
+    const txt = sanitizeToDigits((e.clipboardData || window.clipboardData).getData("text") || "").slice(0, 11);
+    const start = input.selectionStart ?? input.value.length;
+    const end   = input.selectionEnd   ?? input.value.length;
+    input.setRangeText(txt, start, end, "end");
   });
   input.addEventListener("keypress", (e) => {
     if (!/[0-9\u06F0-\u06F9]/.test(e.key)) e.preventDefault();
@@ -292,96 +399,60 @@ document.querySelectorAll(".onlyNum").forEach((input) => {
 
 /* ====== ورود با رمز عبور (secondLogPage) ====== */
 (function () {
-  const userInput = document.querySelector("#secondLogPage .onlyNum"); // موبایل یا نام کاربری
+  const userInput = document.querySelector("#secondLogPage #userOrMobile, #secondLogPage .onlyNum") || document.querySelector("#secondLogPage input[type='text']");
   const passInput = document.querySelector("#inputPassword");
   const loginBtn  = document.querySelector("#secondLogPage .submitCountainer button");
 
   if (!userInput || !passInput || !loginBtn) return;
 
-  const MSG_USERNAME_EMPTY = "شماره موبایل یا نام کاربری را وارد کنید.";
+  const MSG_USERNAME_EMPTY   = "شماره موبایل یا نام کاربری را وارد کنید.";
   const MSG_USERNAME_INVALID = "فرمت شماره موبایل یا نام کاربری معتبر نیست.";
-  const MSG_PASSWORD_EMPTY = "رمز عبور را وارد کنید.";
-  const MSG_PASSWORD_SHORT = "رمز عبور باید حداقل ۶ کاراکتر باشد.";
+  const MSG_PASSWORD_EMPTY   = "رمز عبور را وارد کنید.";
+  const MSG_PASSWORD_SHORT   = "رمز عبور باید حداقل ۶ کاراکتر باشد.";
 
-  // blur: نام کاربری/شماره
   userInput.addEventListener("blur", () => {
     const val = (userInput.value || "").trim();
-    if (!val) {
-      showError(userInput, MSG_USERNAME_EMPTY);
-    } else if (!isValidUsername(val) && !validateIranMobile(val).valid) {
-      showError(userInput, MSG_USERNAME_INVALID);
-    } else {
-      clearError(userInput);
-    }
+    if (!val) showError(userInput, MSG_USERNAME_EMPTY);
+    else if (!isValidUsername(val) && !validateIranMobile(val).valid) showError(userInput, MSG_USERNAME_INVALID);
+    else clearError(userInput);
   });
 
-  // blur: رمز عبور (پیام بعد از .backInputforSearch می‌نشیند)
   passInput.addEventListener("blur", () => {
     const val = (passInput.value || "").trim();
-    if (!val) {
-      showError(passInput, MSG_PASSWORD_EMPTY);
-    } else if (val.length < 6) {
-      showError(passInput, MSG_PASSWORD_SHORT);
-    } else {
-      clearError(passInput);
-    }
+    if (!val) showError(passInput, MSG_PASSWORD_EMPTY);
+    else if (val.length < 6) showError(passInput, MSG_PASSWORD_SHORT);
+    else clearError(passInput);
   });
 
-  // هنگام تایپ، خطا پاک شود
   userInput.addEventListener("input", () => clearError(userInput));
   passInput.addEventListener("input", () => clearError(passInput));
 
-  // کلیک روی دکمه ورود
   loginBtn.addEventListener("click", (e) => {
     e.preventDefault();
-
     let hasError = false;
     const uVal = (userInput.value || "").trim();
     const pVal = (passInput.value || "").trim();
 
-    if (!uVal) {
-      showError(userInput, MSG_USERNAME_EMPTY);
-      userInput.focus();
-      hasError = true;
-    } else if (!isValidUsername(uVal) && !validateIranMobile(uVal).valid) {
-      showError(userInput, MSG_USERNAME_INVALID);
-      userInput.focus();
-      hasError = true;
-    } else {
-      clearError(userInput);
-    }
+    if (!uVal) { showError(userInput, MSG_USERNAME_EMPTY); userInput.focus(); hasError = true; }
+    else if (!isValidUsername(uVal) && !validateIranMobile(uVal).valid) { showError(userInput, MSG_USERNAME_INVALID); userInput.focus(); hasError = true; }
+    else clearError(userInput);
 
-    if (!pVal) {
-      showError(passInput, MSG_PASSWORD_EMPTY);
-      if (!hasError) passInput.focus();
-      hasError = true;
-    } else if (pVal.length < 6) {
-      showError(passInput, MSG_PASSWORD_SHORT);
-      if (!hasError) passInput.focus();
-      hasError = true;
-    } else {
-      clearError(passInput);
-    }
+    if (!pVal) { showError(passInput, MSG_PASSWORD_EMPTY); if (!hasError) passInput.focus(); hasError = true; }
+    else if (pVal.length < 6) { showError(passInput, MSG_PASSWORD_SHORT); if (!hasError) passInput.focus(); hasError = true; }
+    else clearError(passInput);
 
     if (!hasError) {
       console.log("🔐 ورود معتبر:", uVal);
-      // TODO: فراخوانی API واقعی لاگین
+      // TODO: فراخوانی API واقعی
     }
   });
 })();
 
-/* ====== امنیت/پایداری سبک ====== */
-const pwdField = document.querySelector("#inputPassword");
-if (pwdField) {
-  pwdField.addEventListener("paste", (e) => e.preventDefault());
-}
-document.querySelectorAll(".login .inputContainer").forEach((el) => {
-  el.addEventListener("contextmenu", (e) => e.preventDefault());
-});
-
-/* ====== ویرایش شماره در OTP: برگشت به firstLogPage ====== */
+/* ====== ویرایش شماره در صفحات OTP: برگشت به firstLogPage ====== */
 document.addEventListener("click", (e) => {
-  const editItem = e.target.closest("#thirdLogPage .txtItemContainer .item");
+  // هم در newPassword و هم enterNewPassword
+  const editItem =
+    e.target.closest("#newPassword .txtItemContainer .item, #enterNewPassword .txtItemContainer .item");
   if (!editItem) return;
 
   const isEdit =
@@ -391,20 +462,14 @@ document.addEventListener("click", (e) => {
 
   e.preventDefault();
 
-  // پاک‌سازی ورودی‌های OTP
-  const otpInputs = document.querySelectorAll("#thirdLogPage .inputsContainer input");
-  otpInputs.forEach((inp) => (inp.value = ""));
+  ["newPassword", "enterNewPassword"].forEach((id) => {
+    $$( `#${id} .inputsContainer input` ).forEach((i) => (i.value = ""));
+    stopOtpTimer(id);
+  });
 
-  // برگشت به firstLogPage
   showSectionByInnerId("firstLogPage", () => {
     const firstSec = getSectionByInnerId("firstLogPage");
-    if (firstSec) setActiveTabInSection(firstSec, "firstLogPage");
-
-    const visible = getVisibleSection();
-    if (visible && visible !== firstSec) {
-      setActiveTabInSection(visible, "firstLogPage");
-    }
-
+    firstSec && setActiveTabInSection(firstSec, "firstLogPage");
     const phoneInput = document.querySelector("#firstLogPage .onlyNum");
     if (phoneInput) {
       phoneInput.value = sanitizeToDigits(phoneInput.value).slice(0, 11);
@@ -414,7 +479,8 @@ document.addEventListener("click", (e) => {
     }
   });
 });
-/* ====== فراموشی رمز: رفتن به صفحهٔ OTP (thirdLogPage) ====== */
+
+/* ====== فراموشی رمز: از forgetPassword → newPassword با OTP ====== */
 const forgetSubmitBtn = $("#forgetPassword .submitCountainer button");
 if (forgetSubmitBtn) {
   forgetSubmitBtn.addEventListener("click", (e) => {
@@ -433,31 +499,37 @@ if (forgetSubmitBtn) {
       return;
     }
 
-    // شماره معتبر: خطا پاک و رفتن به صفحه OTP
     clearError(mobileInput);
 
-    showSectionBySectionId("thirdLogPage", () => {
-      // فعال‌سازی رفتارهای OTP
-      wireOtpInputs();
+    // رفتن به صفحه OTP اول
+    showSectionBySectionId("newPassword", () => {
+      const phoneTxt = $("#newPassword .txtItemContainer .item:nth-child(2)");
+      phoneTxt && (phoneTxt.textContent = `کد ارسال شده به ${val} را وارد کنید.`);
 
-      // فوکوس روی اولین خانهٔ OTP
-      const firstOtp = $("#thirdLogPage .inputsContainer input");
-      if (firstOtp) firstOtp.focus();
-
-      // نمایش شماره در متن راهنما
-      const phoneTxt = $("#thirdLogPage .txtItemContainer .item:nth-child(2)");
-      if (phoneTxt) {
-        phoneTxt.textContent = `کد ارسال شده به ${val} را وارد کنید.`;
-      }
+      wireOtpForSection("newPassword", {
+        verifyFn: verifyOtpMock,
+        onComplete: () => {
+          showSectionBySectionId("enterNewPassword", () => {
+            wireOtpForSection("enterNewPassword", {
+              verifyFn: verifyOtpMock,
+              onComplete: () => {
+                console.log("✅ OTP مرحله دوم هم درست بود.");
+              },
+            });
+          });
+        },
+      });
     });
 
-    // (اختیاری) اینجا درخواست ارسال کد به API بزن
-    // fetch("/api/auth/forgot-password", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ mobile: val }),
-    // });
+    // (اختیاری) ارسال کد به سرور
+    // fetch("/api/auth/forgot-password", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ mobile: val }) });
   });
+}
+
+/* ====== اعتبارسنجی تستی OTP (جایگزین با API واقعی) ====== */
+function verifyOtpMock(code) {
+  // الان هر کدی 5 رقمی باشه «معتبر» حساب می‌شه
+  return Promise.resolve(/^\d{5}$/.test(code));
 }
 
 
@@ -466,4 +538,53 @@ if (forgetSubmitBtn) {
 
 
 
+/* ====== بررسی رمز جدید و تکرار آن ====== */
+(function () {
+  const section = document.querySelector("#enterNewPassword");
+  if (!section) return;
 
+  const pass1 = section.querySelector("#newPass1");
+  const pass2 = section.querySelector("#newPass2");
+  const submitBtn = section.querySelector("#confirmNewPassBtn");
+  const errorField = section.querySelector(".field-error");
+
+  if (!pass1 || !pass2 || !submitBtn) return;
+
+  function showError(msg) {
+    errorField.textContent = msg;
+    errorField.style.color = "#e53935";
+  }
+  function clearError() {
+    errorField.textContent = "";
+  }
+
+  submitBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const val1 = pass1.value.trim();
+    const val2 = pass2.value.trim();
+
+    if (!val1 || !val2) {
+      showError("لطفاً هر دو فیلد را پر کنید.");
+      return;
+    }
+
+    if (val1.length < 6) {
+      showError("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+      return;
+    }
+
+    if (val1 !== val2) {
+      showError("رمزها با هم مطابقت ندارند.");
+      return;
+    }
+
+    clearError();
+    console.log("✅ رمز جدید ثبت شد:", val1);
+    alert("رمز جدید با موفقیت ذخیره شد ✅");
+
+    // بعد از موفقیت می‌تونی به صفحه ورود برگردی:
+    // showSectionBySectionId("secondLogPage");
+  });
+
+  [pass1, pass2].forEach((inp) => inp.addEventListener("input", clearError));
+})();

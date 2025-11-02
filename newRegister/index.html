@@ -9,10 +9,11 @@
   </head>
   <body>
     <div class="loginContainer">
+      <!-- سکشن ۱: ورود با کد یکبار مصرف -->
       <section class="login">
         <div class="topSide">
           <a href="/" class="register-logo">
-            <img src="/public/logo/Group 94272495.png" />
+            <img src="/logo/Group 94272495.png" />
           </a>
           <div class="description">
             <p>
@@ -20,6 +21,7 @@
             </p>
           </div>
         </div>
+
         <div class="witchOne">
           <button
             class="active"
@@ -39,6 +41,7 @@
             ورود با رمز عبور
           </button>
         </div>
+
         <div id="firstLogPage">
           <div class="inputContainer">
             <input class="onlyNum" type="text" placeholder="شماره موبایل " />
@@ -57,7 +60,7 @@
       <section class="login">
         <div class="topSide">
           <a href="/" class="register-logo">
-            <img src="/public/logo/Group 94272495.png" />
+            <img src="/logo/Group 94272495.png" />
           </a>
           <div class="description">
             <p>
@@ -65,6 +68,7 @@
             </p>
           </div>
         </div>
+
         <div class="witchOne">
           <button
             data-group="register"
@@ -84,9 +88,15 @@
             ورود با رمز عبور
           </button>
         </div>
+
         <div id="secondLogPage">
           <div class="inputContainer">
-            <input class="onlyNum" type="text" placeholder=" شماره موبایل , نام کاربری" />
+            <!-- این فیلد دیگر onlyNum نیست تا نام کاربری هم پذیرفته شود -->
+            <input
+              type="text"
+              placeholder=" شماره موبایل , نام کاربری"
+              id="userOrMobile"
+            />
             <div class="backInputforSearch">
               <input
                 id="inputPassword"
@@ -110,8 +120,9 @@
               data-action="forgot"
               role="button"
               tabindex="0"
-              >فراموشی رمز عبور</span
             >
+              فراموشی رمز عبور
+            </span>
           </div>
 
           <div class="submitCountainer">
@@ -124,11 +135,12 @@
         </div>
       </section>
 
-      <section class="login" id="thirdLogPage">
+      <!-- سکشن ۳: OTP / newPassword -->
+      <section class="login" id="newPassword">
         <div class="topSideAfter">
           <div class="rightSideLogo">
             <a href="/" class="register-logo">
-              <img src="/public/logo/Group 94272495.png" />
+              <img src="/logo/Group 94272495.png" />
             </a>
             <div class="description">
               <p>
@@ -156,13 +168,16 @@
           <input type="text" maxlength="1" />
         </div>
 
-
         <div class="resendContainer">
-          <span class="resendTxt"> دریافت نکردید؟ </span>
-          <span class="resendTxt">
-            <i class="fa-solid fa-arrows-rotate"></i> ارسال مجدد
-          </span>
+          <div class="otpTimer">2:00</div>
+          <div class="OTPEXpired">
+            <span class="resendTxt"> دریافت نکردید؟ </span>
+            <span class="resendTxt">
+              <i class="fa-solid fa-arrows-rotate"></i> ارسال مجدد
+            </span>
+          </div>
         </div>
+
         <div class="submitCountainer">
           <button>ورود</button>
           <p>
@@ -171,12 +186,63 @@
           </p>
         </div>
       </section>
+      <section class="login" id="enterNewPassword">
+        <div class="topSideAfter">
+          <div class="rightSideLogo">
+            <a href="/" class="register-logo">
+              <img src="/logo/Group 94272495.png" />
+            </a>
+            <div class="description">
+              <p>
+                آموزشگاه برنامه نویسی تـــــــحـــــــــلـیـــــــــــــــــل
+                داده
+              </p>
+            </div>
+          </div>
+          <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
+        </div>
 
+        <div id="firstLogPage">
+          <div class="txtItemContainer">
+            <span class="item"> رمز جدید </span>
+          </div>
+
+          <div class="inputContainer">
+            <input type="password" placeholder="رمز جدید" id="newPass1" />
+            <input type="password" placeholder="تکرار رمز جدید" id="newPass2" />
+            <p class="field-error" role="alert" aria-live="polite"></p>
+          </div>
+
+          <div class="submitCountainer">
+            <button id="confirmNewPassBtn">تایید</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="login" id="passwordChangedSuccessfully">
+        <div class="topSide">
+          <a href="/" class="register-logo">
+            <img src="/logo/Group 94272495.png" />
+          </a>
+          <div class="description">
+            <p>
+              آموزشگاه برنامه نویسی تـــــــحـــــــــلـیـــــــــــــــــل داده
+            </p>
+          </div>
+        </div>
+
+
+        <div class="successfullyImg">
+          <img src="" alt="">
+        </div>
+
+      </section>
+      <!-- سکشن ۴: فراموشی رمز عبور (فقط یک‌بار) -->
       <section class="login" id="forgetPassword">
         <div class="topSideAfter">
           <div class="rightSideLogo">
             <a href="/" class="register-logo">
-              <img src="/public/logo/Group 94272495.png" />
+              <img src="/logo/Group 94272495.png" />
             </a>
             <div class="description">
               <p>
@@ -190,8 +256,11 @@
 
         <div class="txtItemContainer">
           <span class="item"> فراموشی رمز عبور</span>
-          <span class="item"> لطفا شماره تلفن خود را جهت دریافت کد احراز هویت وارد کنید. </span>
+          <span class="item">
+            لطفا شماره تلفن خود را جهت دریافت کد احراز هویت وارد کنید.
+          </span>
         </div>
+
         <div class="inputContainer">
           <input class="onlyNum" type="text" placeholder="شماره موبایل " />
         </div>
@@ -205,13 +274,12 @@
         </div>
       </section>
     </div>
+
     <script
       src="https://kit.fontawesome.com/c7278e0f8b.js"
       crossorigin="anonymous"
     ></script>
-
     <script src="./src/login.js"></script>
     <script src="./src/login.security.js"></script>
-
   </body>
 </html>
