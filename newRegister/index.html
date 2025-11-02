@@ -41,13 +41,13 @@
         </div>
         <div id="firstLogPage">
           <div class="inputContainer">
-            <input type="text" placeholder="شماره موبایل " />
+            <input class="onlyNum" type="text" placeholder="شماره موبایل " />
           </div>
           <div class="submitCountainer">
             <button id="getCodeBtn">دریافت کد</button>
             <p>
               ثبت نام نکرده اید
-              <a href=""> ثبت نام </a>
+              <a href="#" data-action="register">ثبت نام</a>
             </p>
           </div>
         </div>
@@ -86,7 +86,7 @@
         </div>
         <div id="secondLogPage">
           <div class="inputContainer">
-            <input type="text" placeholder=" شماره موبایل , نام کاربری" />
+            <input class="onlyNum" type="text" placeholder=" شماره موبایل , نام کاربری" />
             <div class="backInputforSearch">
               <input
                 id="inputPassword"
@@ -99,11 +99,26 @@
               </div>
             </div>
           </div>
+
+          <div class="didUforget">
+            <span>
+              <input type="checkbox" />
+              مرا به خاطر بسپار
+            </span>
+            <span
+              class="forgetLink"
+              data-action="forgot"
+              role="button"
+              tabindex="0"
+              >فراموشی رمز عبور</span
+            >
+          </div>
+
           <div class="submitCountainer">
             <button>ورود</button>
             <p>
               ثبت نام نکرده اید
-              <a href=""> ثبت نام </a>
+              <a href="#" data-action="register">ثبت نام</a>
             </p>
           </div>
         </div>
@@ -133,13 +148,15 @@
           </span>
         </div>
 
-        <div class="inputsContainer">
+        <div class="inputsContainer" data-submit="">
           <input type="text" maxlength="1" />
           <input type="text" maxlength="1" />
           <input type="text" maxlength="1" />
           <input type="text" maxlength="1" />
           <input type="text" maxlength="1" />
         </div>
+
+
         <div class="resendContainer">
           <span class="resendTxt"> دریافت نکردید؟ </span>
           <span class="resendTxt">
@@ -150,7 +167,40 @@
           <button>ورود</button>
           <p>
             ثبت نام نکرده اید
-            <a href=""> ثبت نام </a>
+            <a href="#" data-action="register">ثبت نام</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="login" id="forgetPassword">
+        <div class="topSideAfter">
+          <div class="rightSideLogo">
+            <a href="/" class="register-logo">
+              <img src="/public/logo/Group 94272495.png" />
+            </a>
+            <div class="description">
+              <p>
+                آموزشگاه برنامه نویسی تـــــــحـــــــــلـیـــــــــــــــــل
+                داده
+              </p>
+            </div>
+          </div>
+          <i class="fa-solid fa-angle-left"></i>
+        </div>
+
+        <div class="txtItemContainer">
+          <span class="item"> فراموشی رمز عبور</span>
+          <span class="item"> لطفا شماره تلفن خود را جهت دریافت کد احراز هویت وارد کنید. </span>
+        </div>
+        <div class="inputContainer">
+          <input class="onlyNum" type="text" placeholder="شماره موبایل " />
+        </div>
+
+        <div class="submitCountainer">
+          <button>ورود</button>
+          <p>
+            ثبت نام نکرده اید
+            <a href="#" data-action="register">ثبت نام</a>
           </p>
         </div>
       </section>
@@ -159,124 +209,9 @@
       src="https://kit.fontawesome.com/c7278e0f8b.js"
       crossorigin="anonymous"
     ></script>
-    <script>
-      // نمایش سکشنِ حاوی یک id خاص (firstLogPage / secondLogPage / thirdLogPage)
 
+    <script src="./src/login.js"></script>
+    <script src="./src/login.security.js"></script>
 
-
-      function showSectionByInnerId(innerId) {
-        // همه‌ی سکشن‌ها رو مخفی کن
-        document
-          .querySelectorAll("section.login")
-          .forEach((sec) => (sec.style.display = "none"));
-
-        // سکشن هدف رو پیدا و نمایش بده
-        const inner = document.getElementById(innerId);
-        if (!inner) return;
-        const targetSection = inner.closest("section.login");
-        if (targetSection) targetSection.style.display = "";
-
-        // هماهنگی تب‌های بالا (فعال/غیرفعال)
-        document.querySelectorAll(".witchOne button").forEach((btn) => {
-          if (btn.dataset.target === innerId) btn.classList.add("active");
-          else btn.classList.remove("active");
-        });
-      }
-
-      // پیش‌فرض: نمایش سکشن مربوط به firstLogPage
-      document.addEventListener("DOMContentLoaded", () => {
-        showSectionByInnerId("firstLogPage");
-      });
-
-      // تغییر سکشن با کلیک روی دکمه‌های تب
-      document.addEventListener("click", (e) => {
-        const btn = e.target.closest(".witchOne button");
-        if (!btn) return;
-        const targetId = btn.getAttribute("data-target");
-        if (targetId) showSectionByInnerId(targetId);
-      });
-
-      // تغییر سکشن بر اساس id دکمه دریافت کد
-      document.addEventListener("click", (e) => {
-        const id = e.target.id;
-
-        // مثال: دکمه دریافت کد در فرم اول
-        if (id === "getCodeBtn") {
-          showSectionByInnerId("thirdLogPage"); // نمایش سکشن تایید کد
-        }
-
-        // مثال: اگر دکمه دوم داری (مثلاً id="getCodeBtn2") می‌تونی اینجا اضافه کنی:
-        if (id === "getCodeBtn2") {
-          showSectionByInnerId("thirdLogPage");
-        }
-      });
-      document.addEventListener("DOMContentLoaded", function () {
-        const slashEye = document.querySelector("#showPassword");
-        const eyeNormal = document.querySelector("#hidePassword");
-        const inputPassword = document.querySelector("#inputPassword");
-
-        eyeNormal.style.display = "none";
-        slashEye.style.display = "block";
-        slashEye.addEventListener("click", () => {
-          slashEye.style.display = "none";
-          eyeNormal.style.display = "block";
-          inputPassword.type = "text";
-        });
-        eyeNormal.addEventListener("click", () => {
-          slashEye.style.display = "block";
-          eyeNormal.style.display = "none";
-          inputPassword.type = "password"; // برگشت به password
-        });
-      });
-
-      document.addEventListener("DOMContentLoaded", function () {
-        const getCodeBtn = document.querySelector("#getCodeBtn");
-
-        getCodeBtn.addEventListener("click", () => {});
-
-      });
-
-
-
-
-
-
-
-
-
-
-
-      
-
-const inputs = document.querySelectorAll('.inputsContainer input');
-
-inputs.forEach((input, index) => {
-  input.addEventListener('input', (e) => {
-    const value = e.target.value;
-    if (value && index < inputs.length - 1) {
-      inputs[index + 1].focus();
-    }
-  });
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-      inputs[index - 1].focus();
-    }
-  });
-
-  // فقط اجازه ورود عدد
-  input.addEventListener('keypress', (e) => {
-    if (!/[0-9]/.test(e.key)) {
-      e.preventDefault();
-    }
-  });
-});
-
-
-
-
-
-
-    </script>
   </body>
 </html>

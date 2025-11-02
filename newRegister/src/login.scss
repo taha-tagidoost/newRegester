@@ -1,8 +1,11 @@
+/* ========== Base Font ========== */
 @font-face {
   font-family: "yekanbkh";
   src: url(../public/fonts/YekanBakhFaNum/TTF/YekanBakhFaNum-Regular.ttf);
+  font-display: swap;
 }
 
+/* ========== Reset & Globals ========== */
 * {
   margin: 0;
   padding: 0;
@@ -11,76 +14,134 @@
   font-family: "yekanbkh";
 }
 
+:root {
+  --brand: #2086c8;
+  --brand-2: #2589ca;
+  --brand-3: #42a2e1;
+  --ink: #0b2239;
+  --ink-2: #3a4a5e;
+  --focus: rgba(32, 134, 200, 0.15);
+}
+
+/* ========== Container (for cross-fade) ========== */
 .loginContainer {
+  position: relative;
+  min-height: 100vh;
   height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  padding: 1rem;
+}
 
-  .login {
-    padding: 1em;
+/* ========== Sections: Cross-Fade ========== */
+.loginContainer .login {
+  position: absolute;
+  inset: 0;
+
+  /* internal layout */
+  padding: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  max-width: 500px;
+  width: 100%;
+  margin: auto;
+  gap: 3em;
+
+  /* hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  transform: translateZ(0);
+}
+
+.loginContainer .login.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loginContainer .login {
+    transition: none;
+  }
+}
+
+/* ========== Top Side (Logo + Title) ========== */
+.login {
+  .topSide {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1em;
+
+    > a {
+      width: 15rem;
+      > img {
+        width: 100%;
+        display: block;
+      }
+    }
+
+    .description {
+      width: fit-content;
+      > p {
+        font-weight: bold;
+        color: var(--brand-2);
+        font-size: 28px;
+      }
+    }
+  }
+
+  /* ========== Tabs (witchOne) ========== */
+  .witchOne {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+
+    button {
+      border: none;
+      background: none;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      width: 13rem;
+      padding-block: 1rem; /* جلوگیری از پرش */
+      border-bottom: 2.5px solid transparent;
+      color: var(--ink-2);
+
+      &.active {
+        border-bottom-color: var(--brand-2);
+        border-radius: 0.6em;
+        color: var(--ink);
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus);
+        border-radius: 0.6em;
+      }
+    }
+  }
+
+  /* ========== Shared Form Blocks (first & second) ========== */
+  #firstLogPage,
+  #secondLogPage {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    max-width: 500px;
-    width: 100%;
-    margin: auto;
-    gap: 3em;
+    gap: 2rem;
 
-    &.active {
-      display: flex;
-    }
-
-    .topSide {
-      display: flex;
-      align-items: flex-end; // was `end`
-      justify-content: center;
-      gap: 1em;
-
-      > a {
-        width: 15rem;
-
-        > img {
-          width: 100%;
-        }
-      }
-
-      .description {
-        width: fit-content;
-
-        > p {
-          font-weight: bold;
-          color: #2589ca;
-          font-size: 28px;
-        }
-      }
-    }
-
-    .witchOne {
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      width: 100%;
-
-      button {
-        border: none;
-        background: none;
-        font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
-        width: 13rem; // removed duplicate width:50%
-
-        &.active {
-          border-bottom: 2.5px solid #2589ca;
-          border-radius: 0.6em;
-          padding-block: 1rem;
-        }
-      }
-    }
-
-    #firstLogPage,
-    #secondLogPage {
+    .inputContainer {
       width: 100%;
       display: flex;
       align-items: center;
@@ -88,61 +149,84 @@
       flex-direction: column;
       gap: 2rem;
 
-      .inputContainer {
+      input {
         width: 100%;
+        padding-block: 0.6rem;
+        padding-inline: 1rem;
+        border-radius: 0.88rem;
+        border: 2px solid var(--brand-3);
+        box-shadow: 0 0 12px -3px var(--brand-3);
+        outline: none;
+
+        &:focus {
+          border-color: var(--brand);
+          box-shadow: 0 0 0 4px var(--focus);
+        }
+
+        &.invalid {
+          border-color: #e53935 !important;
+          box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.15);
+        }
+      }
+
+      .backInputforSearch {
+        width: 100%;
+        padding-block: 0.6rem;
+        padding-inline: 1rem;
+        border-radius: 0.88rem;
+        border: 2px solid var(--brand-3);
+        box-shadow: 0 0 12px -3px var(--brand-3);
+        outline: none;
         display: flex;
         align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 2rem;
+        justify-content: space-between;
+        gap: 0.5rem;
+        background: #fff;
 
         input {
-          width: 100%;
-          padding-block: 0.6rem;
-          padding-inline: 1rem;
-          border-radius: 0.88rem;
-          border: 2px solid #42a2e1;
-          box-shadow: 0 0 12px -3px #42a2e1;
+          all: unset;
+          width: 90%;
+          background: #fff;
           outline: none;
+
+          // &:focus-visible {
+          //   box-shadow: 0 0 0 4px var(--focus);
+          //   border-radius: .5rem;
+          // }
         }
 
-        .backInputforSearch {
-          width: 100%;
-          padding-block: 0.6rem;
-          padding-inline: 1rem;
-          border-radius: 0.88rem;
-          border: 2px solid #42a2e1;
-          box-shadow: 0 0 12px -3px #42a2e1;
-          outline: none;
+        .eyeContainer {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-end;
 
-          input {
-            all: unset;
-            width: 90%;
-            background: #fff;
-            outline: none;
+          #showPassword {
+            cursor: pointer;
+            display: inline-flex;
           }
-
-          .eyeContainer {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end; // was `end`
-
-            #showPassword {
-              cursor: pointer;
-            }
-            #hidePassword {
-              display: none;
-              cursor: pointer;
-            }
+          #hidePassword {
+            cursor: pointer;
+            display: none;
           }
         }
       }
     }
+  }
 
-    .submitCountainer {
+  /* ========== Forget Password Section (note the selector) ========== */
+  &#forgetPassword {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2rem;
+
+    .txtItemContainer {
+      grid-template-columns: unset;
+    }
+
+    .inputContainer {
       width: 100%;
       display: flex;
       align-items: center;
@@ -150,112 +234,231 @@
       flex-direction: column;
       gap: 2rem;
 
-      button {
-        background-color: #2086c8;
+      input {
         width: 100%;
-        border-radius: 0.8rem;
-        padding-block: 0.8rem;
-        color: #fff;
-        border: none;
+        padding-block: 0.6rem;
+        padding-inline: 1rem;
+        border-radius: 0.88rem;
+        border: 2px solid var(--brand-3);
+        box-shadow: 0 0 12px -3px var(--brand-3);
+        outline: none;
+        input.invalid {
+          border-color: #e53935 !important;
+          box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.15);
+        }
       }
+    }
+  }
 
-      > p {
-        font-weight: bold;
+  /* ========== “Remember me” + Forgot link ========== */
+  .didUforget {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
 
-        > a {
-          text-decoration: none;
+    > span {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .forgetLink {
+      color: #1e4ae9;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus);
+        border-radius: 0.5rem;
+      }
+    }
+  }
+
+  /* ========== Submit Area ========== */
+  .submitCountainer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2rem;
+
+    button {
+      background-color: var(--brand);
+      width: 100%;
+      border-radius: 0.8rem;
+      padding-block: 0.8rem;
+      color: #fff;
+      border: none;
+      transition: transform 0.06s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 6px 20px -8px var(--brand);
+      }
+      &:active {
+        transform: scale(0.99);
+      }
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus);
+      }
+    }
+
+    > p {
+      font-weight: bold;
+      > a {
+        text-decoration: none;
+        color: var(--brand);
+      }
+    }
+  }
+
+  /* ========== Header After (OTP / Forget) ========== */
+  .topSideAfter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    .rightSideLogo {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1rem;
+
+      > a {
+        width: 6rem;
+        > img {
+          width: 100%;
+          display: block;
+        }
+      }
+      .description {
+        width: 16rem;
+        > p {
+          color: var(--brand);
+          font-weight: 900;
+          font-size: 1.1rem;
         }
       }
     }
 
-    .topSideAfter {
+    > i {
+      color: var(--brand);
+      font-size: 1.7rem;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus);
+        border-radius: 0.5rem;
+      }
+    }
+  }
+
+  /* ========== OTP Texts ========== */
+  .txtItemContainer {
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    grid-template-columns: 307px 1fr;
+    gap: 1rem;
+
+    .item:nth-child(1) {
+      font-weight: 900;
+      font-size: 1.5rem;
+      color: var(--ink);
+    }
+    .item:nth-child(2) {
+      grid-column: 1 / 2;
+      color: var(--ink-2);
+    }
+    .item:nth-child(3) {
+      grid-row: 2 / 2;
+      grid-column: 2 / 2;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      /* gap: 2rem; */
-      width: 100%;
-      .rightSideLogo {
-        display: flex;
-        align-items: end;
-        justify-content: center;
-        gap: 1rem;
-        > a {
-          width: 6rem;
-          > img {
-            width: 100%;
-          }
-        }
-        .description {
-          width: 16rem;
-          > p {
-            color: #2086c8;
-            font-weight: 900;
-            font-size: 1.1rem;
-          }
-        }
+      justify-content: center;
+      gap: 7px;
+      color: #1e4ae9;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus);
+        border-radius: 0.5rem;
       }
-      > i {
-        color: #2086c8;
-        font-size: 1.7rem;
+    }
+  }
+
+  /* ========== OTP Inputs ========== */
+  .inputsContainer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    direction: ltr;
+
+    > input {
+      width: 2.7rem;
+      height: 2.7rem;
+      border-radius: 0.5rem;
+      outline: none;
+      border: 1px solid var(--brand-3);
+      text-align: center;
+      font-size: 2rem;
+    }
+  }
+
+  /* ========== Resend ========== */
+  .resendContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+
+    .resendTxt:nth-child(2) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-weight: bold;
+      cursor: pointer;
+
+      &.disabled {
+        opacity: 0.5;
+        pointer-events: none;
       }
+    }
+  }
+}
+
+/* ========== Responsive Tweaks ========== */
+@media (max-width: 420px) {
+  .login {
+    gap: 2rem;
+
+    .topSide .description > p {
+      font-size: 22px;
+    }
+    .witchOne button {
+      width: auto;
+      font-size: 0.95rem;
     }
 
     .txtItemContainer {
-      display: grid;
-      align-items: center;
-      justify-content: center;
-      grid-template-columns: 307px 1fr;
-      gap: 1rem;
-      .item:nth-child(1) {
-        font-weight: 900;
-        font-size: 1.5rem;
-      }
-      .item:nth-child(2) {
-        grid-column: 1 / 2;
-      }
+      grid-template-columns: 1fr;
+      .item:nth-child(2),
       .item:nth-child(3) {
-        grid-row: 2 / 2;
-        grid-column: 2 / 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        color: 1e4AE9;
+        grid-column: 1 / -1;
       }
     }
 
-    .inputsContainer {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1.5rem;
-      direction: ltr;
-      > input {
-        width: 2.7rem;
-        border-radius: 0.5rem;
-        outline: none;
-        height: 2.7rem;
-        border: none;
-        border: 1px solid #42a2e1;
-        text-align: center;
-        font-size: 2rem;
-      }
-    }
-    .resendContainer {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1em;
-      .resendTxt:nth-child(1) {
-      }
-      .resendTxt:nth-child(2) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        font-weight: bold;
-      }
+    .inputsContainer > input {
+      width: 2.4rem;
+      height: 2.4rem;
+      font-size: 1.6rem;
     }
   }
 }
