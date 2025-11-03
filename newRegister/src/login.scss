@@ -33,6 +33,52 @@
   justify-content: center;
   overflow: hidden;
   padding: 1rem;
+
+  #singUp {
+    width: 100%;
+    .inpustSingUpContainer {
+      display: grid;
+      align-items: center;
+      justify-content: center;
+      grid-template-columns: 1fr 1fr;
+      row-gap: 2rem;
+      column-gap: 1.5rem;
+      width: 100%;
+      @media (max-width: 500px) {
+        grid-template-columns: 1fr;
+        row-gap: unset;
+      }
+      .inputContainerSing {
+        height: 4rem;
+        @media (max-width: 500px) {
+          height: 5rem;
+        }
+        > input {
+          width: 100%;
+          padding-block: 0.6rem;
+          padding-inline: 1rem;
+          border-radius: 0.88rem;
+          border: 2px solid var(--brand-3);
+          outline: none;
+        }
+        input:focus {
+          box-shadow: 0 0 12px -3px var(--brand-3);
+        }
+
+        input.invalid {
+          border-color: #e53935 !important;
+          box-shadow: 0 0 4px 4px rgba(255, 6, 0, 0.24);
+        }
+        .field-error {
+          color: #e53935;
+          font-size: 0.85rem;
+          margin-top: 0.3rem;
+          align-self: flex-start;
+          padding-right: 0.5rem;
+        }
+      }
+    }
+  }
 }
 
 /* ========== Sections: Cross-Fade ========== */
@@ -59,6 +105,9 @@
 
   transition: opacity 0.28s ease, visibility 0.28s ease;
   transform: translateZ(0);
+  &.lessGap {
+    gap: 1rem;
+  }
 }
 
 .loginContainer .login.is-visible {
@@ -80,9 +129,15 @@
     align-items: flex-end;
     justify-content: center;
     gap: 1em;
-
+    @media (max-width: 500px) {
+      padding-right: 1rem;
+    }
     > a {
       width: 15rem;
+      margin-bottom: 0.8rem;
+      @media (max-width: 500px) {
+        width: 11rem;
+      }
       > img {
         width: 100%;
         display: block;
@@ -95,6 +150,9 @@
         font-weight: bold;
         color: var(--brand-2);
         font-size: 28px;
+        @media (max-width: 500px) {
+          font-size: 23px;
+        }
       }
     }
   }
@@ -237,7 +295,7 @@
         }
       }
     }
-     .field-error {
+    .field-error {
       color: #e53935;
       font-size: 0.85rem;
       margin-top: 0.3rem;
@@ -383,6 +441,10 @@
 
       > a {
         width: 6rem;
+        margin-bottom: 0.5rem;
+        @media (max-width: 450px) {
+          width: 5rem;
+        }
         > img {
           width: 100%;
           display: block;
@@ -394,6 +456,12 @@
           color: var(--brand);
           font-weight: 900;
           font-size: 1.1rem;
+          @media (max-width: 450px) {
+           font-size: 1rem;
+          }
+        }
+        @media (max-width: 450px) {
+          width: 10rem;
         }
       }
     }
@@ -485,6 +553,18 @@
         opacity: 0.5;
         pointer-events: none;
       }
+    }
+  }
+
+  .successfullyImg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3rem;
+    width: 100%;
+    > p {
+      font-size: 1.1rem;
     }
   }
 }
